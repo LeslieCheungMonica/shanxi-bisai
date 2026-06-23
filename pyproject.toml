@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "demjson3>=3.0.6",
     "modelscope>=1.37.1",
     "openpyxl>=3.1.5",
 ]
