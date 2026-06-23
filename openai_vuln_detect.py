@@ -188,7 +188,7 @@ for project_name in sorted(os.listdir(files_dir)):
 
         file_md5 = hashlib.md5(code_snippet.encode("utf-8")).hexdigest()
 
-        prompt = f"""你是一个高级漏洞检测模型。
+        prompt_template = """你是一个高级漏洞检测模型。
 请逐步分析以下代码，判断是否存在安全漏洞。
 
 代码：
@@ -204,9 +204,10 @@ for project_name in sorted(os.listdir(files_dir)):
 ## 输出要求
 **只输出以下JSON格式，不要输出任何其他内容（不要输出Markdown代码块标记、不要输出解释说明文字）：**
 
+```
 [
-    {
-            "id": 1,
+    {{
+        "id": 1,
         "cwe": "CWE-XXX",
         "cve": "CVE-XXXX-XXXX（如无则填null）",
         "name": "漏洞名称",
@@ -215,13 +216,16 @@ for project_name in sorted(os.listdir(files_dir)):
         "file": "文件名",
         "path": "文件路径",
         "start_line": 0,
-        "end_line": 0
+        "end_line": 0,
         "description": "漏洞描述",
         "code_snippet": "存在问题的代码片段"
-    }
+    }}
 ]
+```
 
 """
+
+        prompt = prompt_template.format(code_snippet=code_snippet)
 
         resp = client.chat.completions.create(
             model="VulnLLM-R-7B",
