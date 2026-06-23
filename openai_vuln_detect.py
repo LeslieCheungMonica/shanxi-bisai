@@ -142,6 +142,24 @@ def try_parse_json(text):
         return json.loads(text), True
     except json.JSONDecodeError:
         pass
+
+    import re
+
+    match = re.search(r"\[.*\]", text, re.DOTALL)
+    if match:
+        array_str = match.group(0)
+        try:
+            return json.loads(array_str), True
+        except json.JSONDecodeError:
+            pass
+        try:
+            import demjson3
+
+            result = demjson3.decode(array_str)
+            return result, True
+        except Exception:
+            pass
+
     try:
         import demjson3
 
@@ -186,33 +204,24 @@ for project_name in sorted(os.listdir(files_dir)):
 ## 输出要求
 **只输出以下JSON格式，不要输出任何其他内容（不要输出Markdown代码块标记、不要输出解释说明文字）：**
 
-```json
-{{
-  [
-    {{
-      "id": 1,
-      "cwe": "CWE-XXX",
-      "cve": "CVE-XXXX-XXXX（如无则填null）",
-      "name": "漏洞名称",
-      "severity": "严重程度（高危/中危/低危）",
-      "type": "漏洞类型（必须从上述范围中选择）",
-      "location": {{
+[
+    {
+            "id": 1,
+        "cwe": "CWE-XXX",
+        "cve": "CVE-XXXX-XXXX（如无则填null）",
+        "name": "漏洞名称",
+        "severity": "严重程度（高危/中危/低危）",
+        "type": "漏洞类型（必须从上述范围中选择）",
         "file": "文件名",
         "path": "文件路径",
         "start_line": 0,
         "end_line": 0
-      }},
-      "description": "漏洞描述",
-      "code_snippet": "存在问题的代码片段"
-    }}
-  ]
-}}
-```
+        "description": "漏洞描述",
+        "code_snippet": "存在问题的代码片段"
+    }
+]
 
-若未检测到漏洞，JSON格式如下：
-```json
-{{[]}}
-```"""
+"""
 
         resp = client.chat.completions.create(
             model="VulnLLM-R-7B",
