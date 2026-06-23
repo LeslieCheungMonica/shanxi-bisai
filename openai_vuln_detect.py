@@ -139,7 +139,7 @@ for project_name in sorted(os.listdir(files_dir)):
         "path": "文件路径",
         "start_line": 0,
         "end_line": 0,
-        "description": "漏洞描述"
+        "description": "漏洞描述（使用中文描述）"
     }}
 ]
 ```
