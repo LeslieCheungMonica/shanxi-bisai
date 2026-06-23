@@ -2,7 +2,13 @@ import os
 import hashlib
 import csv
 import json
+from datetime import datetime
 from openai import OpenAI
+
+
+def log(msg):
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
+
 
 client = OpenAI(base_url="http://0.0.0.0:8999/v1", api_key="token-sdc123")
 
@@ -90,12 +96,13 @@ for project_name in sorted(os.listdir(files_dir)):
 
     for filename in sorted(os.listdir(project_path)):
         filepath = os.path.join(project_path, filename)
+        log(f"开始处理文件：{filepath}")
         if not os.path.isfile(filepath):
             continue
 
         relative_path = f"{project_name}/{filename}"
         if relative_path in processed_paths:
-            print(f"已存在，跳过：{relative_path}")
+            log(f"已存在，跳过：{relative_path}")
             continue
 
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
@@ -154,21 +161,21 @@ for project_name in sorted(os.listdir(files_dir)):
         output_path = os.path.join(project_output_dir, f"{safe_name}_report.md")
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(f"# 文件：{filename}\n\n{response}")
-        print(f"报告已生成：{output_path}")
+        log(f"报告已生成：{output_path}")
 
         # --- parse JSON from response ---
         json_str = extract_json(response)
         data, valid = try_parse_json(json_str)
 
         if not valid:
-            print(f"  [警告] JSON解析失败，尝试修复: {project_name}/{filename}")
+            log(f"  [警告] JSON解析失败，尝试修复: {project_name}/{filename}")
             try:
                 import demjson3
 
                 data = demjson3.decode(json_str)
                 valid = True
             except Exception as e:
-                print(f"  [错误] JSON修复失败，跳过文件: {e}")
+                log(f"  [错误] JSON修复失败，跳过文件: {e}")
                 continue
 
         relative_path = f"{project_name}/{filename}"
@@ -201,7 +208,7 @@ for project_name in sorted(os.listdir(files_dir)):
                     writer.writeheader()
                     csv_exists = True
                 writer.writerow(row)
-            print(f"统计已追加（无漏洞）：{relative_path}")
+            log(f"统计已追加（无漏洞）：{relative_path}")
             continue
 
         for vuln in data:
@@ -231,4 +238,6 @@ for project_name in sorted(os.listdir(files_dir)):
                     csv_exists = True
                 writer.writerow(row)
 
-        print(f"统计已追加：{relative_path} ({len(data)} 个漏洞)")
+        log(f"统计已追加：{relative_path} ({len(data)} 个漏洞)")
+
+log("所有项目处理完成。")
