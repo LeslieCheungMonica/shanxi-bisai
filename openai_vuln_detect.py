@@ -26,103 +26,6 @@ csv_fields = [
 
 csv_exists = os.path.isfile(csv_path)
 
-VULN_TYPES = [
-    "PHP文件包含",
-    "数据层查询注入",
-    "跨域策略过于宽松",
-    "代码注入",
-    "敏感信息存储不安全",
-    "服务端请求伪造（SSRF）",
-    "使用计算成本不足的密码哈希",
-    "动态确定的属性未受控修改",
-    "LDAP注入",
-    "SQL注入",
-    "缺少授权",
-    "类型混淆",
-    "包含来自不可信控制范围的功能",
-    "依赖不可信输入进行安全决策",
-    "硬编码凭据",
-    "跨站脚本（XSS）",
-    "越界写入",
-    "OS命令注入",
-    "资源分配无限制",
-    "文件或目录权限设置不正确",
-    "文件名或路径的外部控制",
-    "异常处理不当",
-    "比较不正确",
-    "缺少保护机制",
-    "无控制的递归",
-    "释放后使用",
-    "XPath注入",
-    "密码恢复机制薄弱",
-    "不安全的直接对象引用（IDOR）",
-    "动态变量评估",
-    "变量提取错误",
-    "注释中的敏感信息",
-    "Cookie未设置Secure属性",
-    "会话过期不足",
-    "XML外部实体注入（XXE）",
-    "开放重定向",
-    "GET请求中的敏感信息",
-    "Cookie中依赖不可信输入",
-    "外部可访问的文件或目录",
-    "日志中信息泄露",
-    "Web浏览器缓存敏感信息",
-    "凭据保护不足",
-    "弱密码策略",
-    "嵌入恶意代码",
-    "反序列化不可信数据",
-    "信任边界违反",
-    "遗留调试代码",
-    "空指针解引用",
-    "反射型注入",
-    "上传危险类型文件",
-    "资源耗尽（拒绝服务）",
-    "会话固定",
-    "竞争条件",
-    "数据完整性校验不当",
-    "跨站请求伪造（CSRF）",
-    "密码签名验证不当",
-    "数据真实性验证不足",
-    "使用弱伪随机数生成器",
-    "使用不充分随机值",
-    "未使用随机IV",
-    "使用弱哈希算法",
-    "使用已破解或有风险的加密算法",
-    "加密强度不足",
-    "硬编码加密密钥",
-    "明文传输敏感信息",
-    "明文存储敏感信息",
-    "未限制认证失败次数",
-    "关键功能缺少身份认证",
-    "证书验证不当",
-    "身份认证不当",
-    "访问控制不当",
-    "默认权限不正确",
-    "硬编码密码",
-    "明文存储密码",
-    "不当处理多余参数",
-    "路径遍历",
-    "调试信息泄露",
-    "错误信息中的信息泄露",
-    "可观察的响应差异",
-    "敏感信息泄露",
-    "输入验证不当",
-    "整数溢出",
-    "配置错误",
-    "模板注入（SSTI）",
-    "正则表达式效率低下（ReDoS）",
-    "越界读取",
-    "缓冲区溢出",
-    "日志注入",
-    "HTTP响应拆分",
-    "点击劫持",
-    "Cookie未设置HttpOnly属性",
-    "动态代码执行（eval注入）",
-    "XML注入",
-    "敏感数据未加密",
-]
-
 
 def extract_json(text):
     text = text.strip()
@@ -178,9 +81,21 @@ for project_name in sorted(os.listdir(files_dir)):
     project_output_dir = os.path.join(output_dir, project_name)
     os.makedirs(project_output_dir, exist_ok=True)
 
+    processed_paths = set()
+    if os.path.isfile(csv_path):
+        with open(csv_path, "r", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                processed_paths.add(row.get("目标文件路径", ""))
+
     for filename in sorted(os.listdir(project_path)):
         filepath = os.path.join(project_path, filename)
         if not os.path.isfile(filepath):
+            continue
+
+        relative_path = f"{project_name}/{filename}"
+        if relative_path in processed_paths:
+            print(f"已存在，跳过：{relative_path}")
             continue
 
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
@@ -217,8 +132,7 @@ for project_name in sorted(os.listdir(files_dir)):
         "path": "文件路径",
         "start_line": 0,
         "end_line": 0,
-        "description": "漏洞描述",
-        "code_snippet": "存在问题的代码片段"
+        "description": "漏洞描述"
     }}
 ]
 ```
@@ -254,31 +168,10 @@ for project_name in sorted(os.listdir(files_dir)):
                 data = demjson3.decode(json_str)
                 valid = True
             except Exception as e:
-                print(f"  [错误] JSON修复失败: {e}")
+                print(f"  [错误] JSON修复失败，跳过文件: {e}")
+                continue
 
         relative_path = f"{project_name}/{filename}"
-
-        if not valid or data is None:
-            row = {
-                "项目名": project_name,
-                "目标文件": filename,
-                "目标文件路径": relative_path,
-                "文件md5": file_md5,
-                "是否存在漏洞": "解析失败",
-                "漏洞起始行": "",
-                "漏洞结束行": "",
-                "漏洞编号": "",
-                "漏洞类型": "",
-                "漏洞描述": "",
-            }
-            with open(csv_path, "a", newline="", encoding="utf-8-sig") as f:
-                writer = csv.DictWriter(f, fieldnames=csv_fields)
-                if not csv_exists:
-                    writer.writeheader()
-                    csv_exists = True
-                writer.writerow(row)
-            print(f"统计已追加（解析失败）：{relative_path}")
-            continue
 
         if isinstance(data, dict) and len(data) == 0:
             data = []
