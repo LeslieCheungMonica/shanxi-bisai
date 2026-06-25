@@ -128,7 +128,7 @@ for project_name in sorted(os.listdir(files_dir)):
 
 ```
 [
-    {{
+    {
         "id": 1,
         "cwe": "CWE-XXX",
         "cve": "CVE-XXXX-XXXX（如无则填null）",
@@ -140,7 +140,7 @@ for project_name in sorted(os.listdir(files_dir)):
         "start_line": 0,
         "end_line": 0,
         "description": "漏洞描述（使用中文描述）"
-    }}
+    }
 ]
 ```
 
@@ -212,7 +212,6 @@ for project_name in sorted(os.listdir(files_dir)):
             continue
 
         for vuln in data:
-            loc = vuln.get("location", {})
             cwe = vuln.get("cwe", "")
             cve = vuln.get("cve", "")
             vuln_id = cwe
@@ -225,8 +224,8 @@ for project_name in sorted(os.listdir(files_dir)):
                 "目标文件路径": relative_path,
                 "文件md5": file_md5,
                 "是否存在漏洞": "是",
-                "漏洞起始行": loc.get("start_line", ""),
-                "漏洞结束行": loc.get("end_line", ""),
+                "漏洞起始行": vuln.get("start_line", ""),
+                "漏洞结束行": vuln.get("end_line", ""),
                 "漏洞编号": vuln_id,
                 "漏洞类型": vuln.get("type", ""),
                 "漏洞描述": vuln.get("description", ""),
